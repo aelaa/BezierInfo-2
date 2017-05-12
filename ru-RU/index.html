@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>A Primer on Bézier Curves</title>
+    <link rel="shortcut icon" href="favicon.png" type="image/png">
+
+    <script>
+      (function() {
+        // force https except during local testing (e.g. not on port 80)
+        let loc = window.location.toString();
+        if (loc.indexOf(":8080") === -1 && loc.indexOf("http:") === 0) {
+          window.location = loc.replace("http:","https:");
+        }
+        // if we're still here, load google analytics
+		(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+		ga('create', 'UA-69475841-3', 'auto');
+		ga('send', 'pageview');
+      }());
+    </script>
+
+    <!-- optional <base> element to make sure localised content still uses the base location -->
+    <base href="..">
+
+    <!-- mobile optimize -->
+    <meta name="viewport" content="width=800, initial-scale=1.0">
+
+    <!-- opengraph information -->
+    <meta property="og:title" content="A Primer on Bézier Curves">
+    <meta property="og:type" content="text">
+    <meta property="og:url" content="http://pomax.github.io/bezierinfo">
+    <meta property="og:description" content="A detailed explanation of Bézier curves, and how to do the many things that we commonly want to do with them.">
+    <meta property="og:locale" content="en_GB">
+    <meta property="og:type" content="article">
+    <meta property="og:published_time" content="2013-06-13 12:00:00">
+    <meta property="og:author" content="Mike 'Pomax' Kamermans">
+    <meta property="og:section" content="Bézier Curves">
+    <meta property="og:tag" content="Bézier Curves">
+
+    <style>
+      html, body, article { height: 100%; margin: 0; }
+      body { width: 800px; margin: auto; font-size: 4.25mm!important; }
+    </style>
+
+    <link rel="stylesheet" href="stylesheets/style.css">
+  </head>
+  <body>
+    <!-- referral tracking, because I like knowing who's linking to my book -->
+    <script src="lib/site/referrer.js" async></script>
+
+    <div class="dev" style="display:none;">
+      <style>
+        div.dev {
+          background: rgb(43, 49, 95);
+          color: rgb(81, 181, 255);
+          position: fixed;
+          transform: rotate(-45deg);
+          width: 22em;
+          text-align: center;
+          top: 4em;
+          left: -6em;
+          font-variant: small-caps;
+          font-weight: bolder;
+          font-family: Helvetica;
+          box-shadow: 0px 5px 7px 2px rgba(0, 0, 0, 0.3);
+        }
+      </style>
+      DEV PREVIEW ONLY
+      <script>
+        (function() {
+          var loc = window.location.toString();
+          if(loc.indexOf('localhost')!==-1 || loc.indexOf('-2')!==-1) {
+            var e = document.querySelector('div.dev');
+            e.removeAttribute("style");
+          }
+        }());
+      </script>
+    </div>
+
+    <!-- Because people probably want to share this article -->
+    <div class="sharebuttons">
+      <style>
+        div.sharebuttons {
+          position: fixed;
+          top: 1rem;
+          left: 1rem;
+          padding: 0.1em;
+          background: white;
+        }
+        div.sharebuttons img {
+            min-width: 1.25rem;
+            min-height: 1.25rem;
+            max-height: 1.25rem;
+          }
+        }
+      </style>
+      <a class="social reddit" href="https://www.reddit.com/submit?url=https://pomax.github.io/bezierinfo&title=A Primer on Bézier Curves&text=A free, online book for when you really need to know how to do Bézier things.">
+        <img src="https://www.redditstatic.com/spreddit1.gif" alt="submit to reddit" title="submit to reddit">
+      </a>
+      <a class="social hn" href="https://news.ycombinator.com/submitlink?u=https://pomax.github.io/bezierinfo&t=A Primer on Bézier Curves">
+        <img src="https://news.ycombinator.com/y18.gif" alt="submit to hacker news" title="submit to hacker news">
+      </a>
+      <a class="social twitter" href="https://twitter.com/intent/tweet?hashtags=bezier,curves,maths&original_referer=https://pomax.github.io/bezierinfo&text=Reading%20%22A%20Primer%20on%20Bezier%20Curves%22%20by%20@TheRealPomax%20over%20on%20https://pomax.github.io/bezierinfo">
+        <img src="images/twitter.ico" alt="tweet your read" title="tweet your read">
+      </a>
+    </div>
+
+    <article>
+      <div id="article">
+        <!-- these rules will get overwritten by the style in the article.js React bundle -->
+        <style>
+          header h1, header h2 { text-align: center; }
+          header h1 { font-size: 300%; margin: 0.2em; }
+          p.jsnote { margin: 2em; text-align: justify; }
+          p.jsnote:first-child { width: 13em; margin: auto; }
+        </style>
+
+        <header>
+          <h1>A Primer on Bézier Curves</h1>
+          <h2>A free, online book for when you really need to know how to do Bézier things.</h2>
+        </header>
+
+        <!-- This content only shows for as long as JS/React hasn't loaded the page content -->
+        <section>
+          <p class="jsnote">Loading the article<span id="loader">...</span></p>
+
+          <p class="enabling jsnote">If you have JavaScript disabled, you'll have to enable it, as this book heavily relies on JS rendering, both for the base content (it's been written as a React application) and all the interactive graphics, which rely on JS not just for the user interaction but also for the live-drawing (none of the graphics in this book are flat images, they're all live-rendered).</p>
+
+          <script>var n=document.querySelector(".enabling");n.parentNode.removeChild(n);(function update(el,str){str=(str.length===3)?'':str+'.';el.textContent=str;setTimeout(function(){update(el,str);},333);}(document.querySelector("#loader"),"..."));</script>
+        </section>
+
+        <!-- this content is retrieved from the preface section -->
+        <section className="preface"><h3 id="-">Примечание переводчика</h3>
+<p>Весь текст книги ведётся от лица автора.</p>
+<h2>Введение</h2>
+<p>Для рисования вещей в 2D мы привыкли пользоваться линиями, которые бывают двух видов: прямые и кривые. Первые рисуются с помощью компьютера очень легко: указываем компьютеру первую и последнюю точки и БАМ! прямая. Никаких проблем.</p>
+<p>С кривыми проблем намного больше. В то время как мы можем с закрытыми глазами нарисовать кривую от руки, у компьютера возникают с этим проблемы. Он не может нарисовать линию, пока не знает какой математической функцией она описывается. На самом деле он использует функции и для прямой, но функция прямой достаточно проста, и мы привыкли не замечать того, что для компьютера все линии являются функциями, и прямые, и кривые.
+Однако это означает, что мы должны использовать такие функции, которые быстро вычисляются компьютером, и рисуют сносные кривые. Таких функций несколько, и в этой книге мы рассмотрим наиболее распространённую, используемую почти везде где нужны кривые - кривые Безье (не смущайтесь что функция называется "кривые" - это нормально, поскольку кривые точно описывают поведение этой функции).</p>
+<p>Они названы в честь <a href="https://ru.wikipedia.org/wiki/%D0%91%D0%B5%D0%B7%D1%8C%D0%B5,_%D0%9F%D1%8C%D0%B5%D1%80">Пьера Безье</a>, который исследовал и опубликовал их как кривые, хорошо подходящие для дизайна (работая в Renault, он опубликовал свои исследования в 1962), однако первым обнаружил их не он. Изобрёл эту функцию математик <a href="https://ru.wikipedia.org/wiki/%D0%9A%D0%B0%D1%81%D1%82%D0%B5%D0%BB%D1%8C%D0%B6%D0%BE,_%D0%9F%D0%BE%D0%BB%D1%8C_%D0%B4%D0%B5">Пол де Кастельжо</a>, работая в 1959 в Citroën, открыв очень удобный способ описать кривые. Однако де Кастельжо нигде не публиковал свои исследования, усложнив поиск истинного изобретателя функции. Или же нет? В своей сути кривые Безье являются "многочленами Бернштейна", относящимися к семейству функций, обнаруженным <a href="https://ru.wikipedia.org/wiki/%D0%91%D0%B5%D1%80%D0%BD%D1%88%D1%82%D0%B5%D0%B9%D0%BD,_%D0%A1%D0%B5%D1%80%D0%B3%D0%B5%D0%B9_%D0%9D%D0%B0%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D1%87">Сергеем Натановичем Бернштейном</a>, который опубликовал их в далёком 1912. В любом случае нас не волнует кто их изобрёл, нам важно что они очень удобны: вы можете комбинировать несколько кривых в одну целую. Если вы использовали "пути" в Photoshop, или работали в векторных графических редакторах, как Flash, Illustrator или Inkscape, кривые, которые вы в них использовали, являются кривыми Безье.</p>
+<p>Но что если вам требуется запрограммировать их рисование самому? Какие есть подводные камни? Как их рисовать? Что такое "ограничивающая рамка", как найти пересечения, как вытянуть кривую, в общем: как делать всё, что можно с ними делать? Для этого и написана эта книга. Приготовьтесь к знаниям!</p>
+
+<div className="print">
+<h2 id="ps-">PS: купите мне кофе?</h2>
+<p>Если вам понравилась эта книга, вам возможно захочется поблагодарить автора. Это легко: вы всегда можете купить мне кофе, любой какой продаётся в вашем городе (но учтите что для написания этой книги понадобился очень хороший кофе =)).</p>
+<p>Эта книга развилась за несколько лет из короткого примера в 85-страничную электронную книгу на тему кривых Безья, и много литров кофе ушло в процессе написания. Я ни капли не жалею потраченного времени, но мне всегда нужна чашка кофе для работы! Пожалуйста, зайдите на <a href="https://pomax.github.io/bezierinfo">https://pomax.github.io/bezierinfo</a> и нажмите на ссылку в введении, чтобы пожертвовать мне на кофе.</p>
+</div><p>—Pomax (известный в твиттере как <a href="https://twitter.com/TheRealPomax">@TheRealPomax</a>)</p>
+
+<div className="note">
+<h2 id="-">Замечание: все примеры в этой книге интерактивные.</h2>
+<p>Этот сайт использует интерактивные примеры на <a href="http://pomax.github.io/bezierjs">Bezier.js</a>, а так же математические примеры (в формате LaTeX) на замечательной библиотеке <a href="http://MathJax.org">MathJax</a>. Сайт сгенерирован в виде React-приложения с использованием Webpack, что несколько затрудняет изучение исходного кода страниц. Я всё ещё пытаюсь как-то это побороть, но в конце концов это не такая большая проблема.</p>
+<h2 id="-">Эта книга является свободной.</h2>
+<p>Эта книга является свободным ПО, и размещена на двух репозиториях на Github. Первый - <a href="https://github.com/pomax/bezierinfo">https://github.com/pomax/bezierinfo</a>, содержит готовую версию книги, которую вы сейчас читаете. Второй - <a href="https://github.com/pomax/BezierInfo-2">https://github.com/pomax/BezierInfo-2</a>, содержит все ресурсы и версию для разработки. Вы можете форкнуть любой из них и делать с ними что угодно, кроме продажи под своим авторством =)</p>
+<h2 id="-">Какой уровень математики требуется для чтения?</h2>
+<p>Большая часть примеров в книге требуют знания школьной математики уровня старших классов. Если вы понимаете базовую арифметику - у вас не должно быть проблем с пониманием. Со временем будут появляться <em>намного</em> более сложные примеры, однако вы просто можете пропустить непонятные вам примеры и даже разделы. В конце каждого раздела написан вывод по материалу, и вам может быть вполне достаточно его. </p>
+<h2 id="-">Вопросы и комментарии:</h2>
+<p>Если у вас есть комментарии к разделам, вы можете описать их в <a href="https://github.com/pomax/BezierInfo-2/issues">Github issue tracker</a> (ссылка также есть в репозитории). Если у вас есть вопросы, у меня нет отдельного раздела для ответа на вопросы, но вы также можете воспользоваться Github issues. Как только я закончу переписывание сайта, я верну раздел комментариев, и может быть добавлю возможность выделить текст и задать вопрос по конкретному предложению.</p>
+<h2 id="buy-me-a-coffee-">Buy me a coffee?</h2>
+<p>If you enjoyed this book, or you simply found it useful for something you were trying to get done, and you were wondering how to let me know you appreciated this book, you can always <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QPRDLNGDANJSW">buy me a coffee</a>, however-much a coffee is where you live. This work has grown over the years, from a small primer to a 70ish print-page-equivalent reader on the subject of Bézier curves, and a lot of coffee went into the making of it. I don't regret a minute I spent on writing it, but I can always do with some more coffee to keep on writing!</p>
+</div></section>
+      </div>
+    </article>
+
+    <!-- the actual article is a JS bundle -->
+    <script src="ru-RU/article.js" async></script>
+    <script src="lib/site/social-updater.js" async></script>
+  </body>
+</html>

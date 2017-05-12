@@ -29,6 +29,7 @@
     "build:en-GB":  "webpack -p",
     "build:zh-CN":  "cross-env LOCALE=zh-CN webpack -p",
     "build:ja-JP":  "cross-env LOCALE=ja-JP webpack -p",
+    "build:ru-RU":  "cross-env LOCALE=ru-RU webpack -p",
     "svgo":         "svgo",
     "xelatex":      "xelatex",
     "pdfcrop":      "pdfcrop",
